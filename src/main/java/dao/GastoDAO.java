@@ -1,6 +1,5 @@
 package dao;
 
-import com.mysql.cj.protocol.Resultset;
 import model.Gasto;
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -58,7 +57,7 @@ public List<Gasto> listarPorMes(int mes, int anio) {
     }
 
     // Eliminar gasto
-    public void eliminar (int id){
+    public void eliminar(int id){
         String sql = "delete from gastos where id = ?";
         try (Connection conn = ConexionDB.conectar();
             PreparedStatement ps = conn.prepareStatement(sql)){
@@ -84,6 +83,20 @@ public List<Gasto> listarPorMes(int mes, int anio) {
         }
     }
 
+    //Estimacion cierre de mes usando procedimiento almacenado
+    public ResultSet estimacionCierre(int mes, int anio){
+        try{
+            Connection conn = ConexionDB.conectar();
+            CallableStatement cs = conn.prepareCall("{call estimacion_cierre(?, ?)}");
+            cs.setInt(1, mes);
+            cs.setInt(2, anio);
+            return cs.getResultSet();
+        } catch (SQLException e){
+            System.out.println("Error: " + e.getMessage());
+            return null;
+        }
+    }
+
     // Calcular ahorro usando procedimiento almacenado
     public ResultSet calcularAhorro(int mes, int anio){
         try{
@@ -97,5 +110,74 @@ public List<Gasto> listarPorMes(int mes, int anio) {
             System.out.println("Error: " + e.getMessage());
             return null;
         }
+    }
+
+    // Guardar o actualizar presupuesto mensual
+    public void guardarPresupuesto(double limite, int mes, int anio) {
+        String sqlCheck = "SELECT id FROM presupuesto WHERE mes = ? AND anio = ?";
+        try (Connection conn = ConexionDB.conectar();
+             PreparedStatement ps = conn.prepareStatement(sqlCheck)) {
+            ps.setInt(1, mes);
+            ps.setInt(2, anio);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                // Ya existe — actualizar
+                try (PreparedStatement psUpdate = conn.prepareStatement(
+                        "UPDATE presupuesto SET monto_limite = ? WHERE mes = ? AND anio = ?")) {
+                    psUpdate.setDouble(1, limite);
+                    psUpdate.setInt(2, mes);
+                    psUpdate.setInt(3, anio);
+                    psUpdate.executeUpdate();
+                }
+            } else {
+                // No existe — insertar
+                try (PreparedStatement psInsert = conn.prepareStatement(
+                        "INSERT INTO presupuesto (monto_limite, mes, anio) VALUES (?, ?, ?)")) {
+                    psInsert.setDouble(1, limite);
+                    psInsert.setInt(2, mes);
+                    psInsert.setInt(3, anio);
+                    psInsert.executeUpdate();
+                }
+            }
+            System.out.println("Presupuesto guardado correctamente.");
+        } catch (SQLException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    //Obtener presupuesto del mes
+    public double obtenerPresupuesto (int mes, int anio){
+        String sql = "select monto_limite from presupuesto where mes = ? and anio = ?";
+        try(Connection conn = ConexionDB.conectar();
+            PreparedStatement ps = conn.prepareStatement(sql)){
+            ps.setInt(1, mes);
+            ps.setInt(2, anio);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()){
+                return rs.getDouble("monto_limite");
+            }
+        }catch (SQLException e){
+            System.out.println("Error: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    // Obtener total gastado en el mes
+    public double obtenerTotalMes(int mes, int anio) {
+        String sql = "SELECT COALESCE(SUM(monto), 0) as total FROM gastos " +
+                "WHERE MONTH(fecha_hora) = ? AND YEAR(fecha_hora) = ?";
+        try (Connection conn = ConexionDB.conectar();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, mes);
+            ps.setInt(2, anio);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getDouble("total");
+            }
+        } catch (SQLException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+        return 0;
     }
 }

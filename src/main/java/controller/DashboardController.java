@@ -21,11 +21,13 @@ public class DashboardController {
     @FXML private Label lblEstimacion;
     @FXML private Label lblAhorro;
     @FXML private Label lblEstado;
+    @FXML private Label lblPresupuesto;
 
     // Formulario registro
     @FXML private TextField txtMonto;
     @FXML private TextField txtTienda;
     @FXML private TextField txtUbicacion;
+    @FXML private TextField txtPresupuesto;
     @FXML private ComboBox<Categoria> cmbCategoria;
 
     // Tabla historial
@@ -48,15 +50,22 @@ public class DashboardController {
         cargarCategorias();
         cargarGastos();
         actualizarDashboard();
+        cargarPresupuesto();
+        actualizarDashboard();
     }
 
     private void  configurarTabla(){
         colId.setCellValueFactory(new PropertyValueFactory<>("id"));
         colMonto.setCellValueFactory(new PropertyValueFactory<>("monto"));
         colTienda.setCellValueFactory(new PropertyValueFactory<>("tienda"));
-        colCategoria.setCellValueFactory(new PropertyValueFactory<>("NombreCategoria"));
+        colCategoria.setCellValueFactory(new PropertyValueFactory<>("nombreCategoria"));
         colUbicacion.setCellValueFactory(new PropertyValueFactory<>("ubicacion"));
         colFecha.setCellValueFactory(new PropertyValueFactory<>("fechaHora"));
+    }
+
+    public  void cargarGastos(){
+        List<Gasto> lista = gastoDAO.listarPorMes(mesActual, anioActual);
+        tablaGastos.setItems(FXCollections.observableArrayList(lista));
     }
 
     private void cargarCategorias (){
@@ -64,20 +73,33 @@ public class DashboardController {
         cmbCategoria.setItems(FXCollections.observableArrayList(lista));
     }
 
-    private void actualizarDashboard(){
+    private void actualizarDashboard() {
         try {
+            // Total gastado directo
+            double total = gastoDAO.obtenerTotalMes(mesActual, anioActual);
+            double presupuesto = gastoDAO.obtenerPresupuesto(mesActual, anioActual);
+            double ahorro = presupuesto - total;
+
+            lblTotalGastado.setText(String.format("$ %.0f", total));
+            lblPresupuesto.setText(String.format("$ %.0f", presupuesto));
+            lblAhorro.setText(String.format("$ %.0f", ahorro));
+
             // Estimación cierre
             ResultSet rsEst = gastoDAO.estimacionCierre(mesActual, anioActual);
             if (rsEst != null && rsEst.next()) {
-                lblTotalGastado.setText("$ " + rsEst.getDouble("gastado_hasta_hoy"));
-                lblEstimacion.setText("$ " + rsEst.getDouble("estimacion_cierre_mes"));
+                lblEstimacion.setText(String.format("$ %.0f",
+                        rsEst.getDouble("estimacion_cierre_mes")));
             }
-            // Ahorro
-            ResultSet rsAhorro = gastoDAO.calcularAhorro(mesActual, anioActual);
-            if (rsAhorro != null && rsAhorro.next()) {
-                lblAhorro.setText("$ " + rsAhorro.getDouble("ahorro_posible"));
-                lblEstado.setText(rsAhorro.getString("estado"));
+
+            // Estado
+            if (total > presupuesto) {
+                lblEstado.setText("Presupuesto excedido");
+            } else if (ahorro < presupuesto * 0.1) {
+                lblEstado.setText("Cerca del limite");
+            } else {
+                lblEstado.setText("En control");
             }
+
         } catch (Exception e) {
             System.out.println("Error dashboard: " + e.getMessage());
         }
@@ -110,10 +132,9 @@ public class DashboardController {
         Gasto seleccionado = tablaGastos.getSelectionModel().getSelectedItem();
         if(seleccionado == null ){
             mostrarAlerta("Selecciona un gasto de la tabla.");
-            cargarGastos();
-            actualizarDashboard();
+            return; // ← agregar return para que no siga ejecutando
         }
-        GastoDAO.eliminar(seleccionado.getId());
+        gastoDAO.eliminar(seleccionado.getId()); // ← minúscula, instancia no static
         cargarGastos();
         actualizarDashboard();
     }
@@ -130,5 +151,25 @@ public class DashboardController {
         alert.setTitle("Aviso");
         alert.setContentText(mensaje);
         alert.showAndWait();
+    }
+
+    public void guardarPresupuesto(){
+        try{
+            double limite = Double.parseDouble(txtPresupuesto.getText());
+            gastoDAO.guardarPresupuesto(limite, mesActual, anioActual);
+            txtPresupuesto.clear();
+            actualizarDashboard();
+        } catch (NumberFormatException e){
+            mostrarAlerta("Ingresa un monto valido para el presupuesto");
+        }
+    }
+
+    private void cargarPresupuesto (){
+        try {
+            double presupuesto = gastoDAO.obtenerPresupuesto(mesActual, anioActual);
+            lblPresupuesto.setText("$ " + presupuesto);
+        } catch (Exception e){
+            System.out.println("Error cargando presupuesto: " + e.getMessage());
+        }
     }
 }
