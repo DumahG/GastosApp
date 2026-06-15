@@ -47,6 +47,13 @@
                         <Label fx:id="lblPresupuesto" text="0" style="-fx-text-fill: blue; -fx-font-weight: bold;"/>
                     </HBox>
                     <HBox spacing="5" style="-fx-padding: 5 0 0 0;">
+                        <ComboBox fx:id="cmbMes" prefWidth="120" promptText="Mes"/>
+                        <ComboBox fx:id="cmbAnio" prefWidth="90" promptText="Año"/>
+                        <Button text="Consultar"
+                                onAction="#consultarMes"
+                                style="-fx-background-color: #2980B9; -fx-text-fill: white; -fx-background-radius: 5;"/>
+                    </HBox>
+                    <HBox spacing="5" style="-fx-padding: 5 0 0 0;">
                         <TextField fx:id="txtPresupuesto" promptText="Nuevo presupuesto" prefWidth="150"/>
                         <Button text="Guardar" onAction="#guardarPresupuesto"
                                 style="-fx-background-color: #2980B9; -fx-text-fill: white; -fx-background-radius: 5;"/>
@@ -74,6 +81,31 @@
                             prefWidth="250"
                             style="-fx-background-color: #2980B9; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;"/>
                 </VBox>
+            </VBox>
+
+            <!-- CATEGORIAS PERSONALIZADAS -->
+            <VBox spacing="8" style="-fx-background-color: #EBF5FB; -fx-padding: 12; -fx-background-radius: 8;">
+                <Label text="Gestionar Categorías"
+                       style="-fx-font-weight: bold; -fx-font-size: 14;"/>
+
+                <Label text="Nueva categoría:"/>
+                <TextField fx:id="txtNuevaCategoria"
+                           promptText="Ej: Mascotas"/>
+
+                <Button text="Agregar Categoría"
+                        onAction="#agregarCategoria"
+                        prefWidth="250"
+                        style="-fx-background-color: green; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;"/>
+
+                <Label text="Categorías personalizadas:"/>
+                <ComboBox fx:id="cmbEliminarCategoria"
+                          prefWidth="250"
+                          promptText="Selecciona para eliminar"/>
+
+                <Button text="Eliminar Categoría"
+                        onAction="#eliminarCategoria"
+                        prefWidth="250"
+                        style="-fx-background-color: orange; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;"/>
             </VBox>
 
             <!-- PANEL DERECHO: Historial -->

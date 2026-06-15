@@ -30,6 +30,10 @@ public class DashboardController {
     @FXML private TextField txtPresupuesto;
     @FXML private ComboBox<Categoria> cmbCategoria;
 
+    // Categorias personalizadas
+    @FXML private TextField txtNuevaCategoria;
+    @FXML private ComboBox<Categoria> cmbEliminarCategoria;
+
     // Tabla historial
     @FXML private TableView<Gasto> tablaGastos;
     @FXML private TableColumn<Gasto, Integer> colId;
@@ -51,6 +55,7 @@ public class DashboardController {
         cargarGastos();
         actualizarDashboard();
         cargarPresupuesto();
+        cargarCategoriasPersonalizadas();
         actualizarDashboard();
     }
 
@@ -171,5 +176,52 @@ public class DashboardController {
         } catch (Exception e){
             System.out.println("Error cargando presupuesto: " + e.getMessage());
         }
+    }
+
+    @FXML
+    public void agregarCategoria(){
+        String nombre = txtNuevaCategoria.getText().trim();
+        if (nombre.isEmpty()){
+            mostrarAlerta("Escribe un nombre para la categoria.");
+            return;
+        }
+        categoriaDAO.agregar(nombre);
+        txtNuevaCategoria.clear();
+        cargarCategorias();
+        cargarCategoriasPersonalizadas();
+        mostrarExito("Categoría agregada correctamente.");
+    }
+
+    private void mostrarExito(String mensaje) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Éxito");
+        alert.setContentText(mensaje);
+        alert.showAndWait();
+    }
+
+    @FXML
+    public void eliminarCategoria(){
+        Categoria seleccionada = cmbEliminarCategoria.getValue();
+        if (seleccionada == null){
+            mostrarAlerta("Selecciona una categoria para eliminar.");
+            return;
+        }
+        categoriaDAO.eliminar(seleccionada.getId());
+        cargarCategorias();
+        cargarCategoriasPersonalizadas();
+        cmbEliminarCategoria.setValue(null);
+        mostrarExito2("Categoría Eliminada correctamente.");
+    }
+
+    private void mostrarExito2(String mensaje) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Éxito");
+        alert.setContentText(mensaje);
+        alert.showAndWait();
+    }
+
+    private void cargarCategoriasPersonalizadas(){
+        List<Categoria> personalizadas = categoriaDAO.obtenerPersonalizadas();
+        cmbEliminarCategoria.setItems(FXCollections.observableArrayList(personalizadas));
     }
 }
