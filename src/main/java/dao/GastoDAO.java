@@ -124,7 +124,7 @@ public List<Gasto> listarPorMes(int mes, int anio) {
             if (rs.next()) {
                 // Ya existe — actualizar
                 try (PreparedStatement psUpdate = conn.prepareStatement(
-                        "UPDATE presupuesto SET monto_limite = ? WHERE mes = ? AND anio = ?")) {
+                        "UPDATE presupuesto SET ingreso_mensual = ? WHERE mes = ? AND anio = ?")) {
                     psUpdate.setDouble(1, limite);
                     psUpdate.setInt(2, mes);
                     psUpdate.setInt(3, anio);
@@ -133,7 +133,7 @@ public List<Gasto> listarPorMes(int mes, int anio) {
             } else {
                 // No existe — insertar
                 try (PreparedStatement psInsert = conn.prepareStatement(
-                        "INSERT INTO presupuesto (monto_limite, mes, anio) VALUES (?, ?, ?)")) {
+                        "INSERT INTO presupuesto (ingreso_mensual, mes, anio) VALUES (?, ?, ?)")) {
                     psInsert.setDouble(1, limite);
                     psInsert.setInt(2, mes);
                     psInsert.setInt(3, anio);
@@ -148,14 +148,14 @@ public List<Gasto> listarPorMes(int mes, int anio) {
 
     //Obtener presupuesto del mes
     public double obtenerPresupuesto (int mes, int anio){
-        String sql = "select monto_limite from presupuesto where mes = ? and anio = ?";
+        String sql = "select ingreso_mensual from presupuesto where mes = ? and anio = ?";
         try(Connection conn = ConexionDB.conectar();
             PreparedStatement ps = conn.prepareStatement(sql)){
             ps.setInt(1, mes);
             ps.setInt(2, anio);
             ResultSet rs = ps.executeQuery();
             if (rs.next()){
-                return rs.getDouble("monto_limite");
+                return rs.getDouble("ingreso_mensual");
             }
         }catch (SQLException e){
             System.out.println("Error: " + e.getMessage());

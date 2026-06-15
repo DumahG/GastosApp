@@ -42,22 +42,49 @@
                         <Label text="Estado:"/>
                         <Label fx:id="lblEstado" text="En control" style="-fx-font-weight: bold;"/>
                     </HBox>
+                    <!-- PANEL SOBRANTE -->
+                    <VBox fx:id="panelSobrante" spacing="6"
+                          managed="false"
+                          style="-fx-background-color: #E1F5EE; -fx-padding: 10; -fx-background-radius: 8;"
+                          visible="false">
+                        <Label fx:id="lblSobrante" text="Tienes $ 0 disponibles"
+                               style="-fx-font-weight: bold; -fx-text-fill: #0F6E56;"/>
+                        <Label text="¿Qué deseas hacer con el sobrante?"
+                               style="-fx-text-fill: #0F6E56;"/>
+                        <Button text="Guardar en cuenta ahorro"
+                                onAction="#guardarEnAhorro"
+                                prefWidth="220"
+                                style="-fx-background-color: #27AE60; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;"/>
+                        <Button text="Agregar al mes siguiente"
+                                onAction="#agregarAlSiguienteMes"
+                                prefWidth="220"
+                                style="-fx-background-color: #2980B9; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;"/>
+                    </VBox>
+
+                    <!-- TOTAL AHORRADO -->
+                    <HBox spacing="5">
+                        <Label fx:id="lblTotalAhorrado" text="Cuenta ahorro: $ 0"
+                               style="-fx-font-weight: bold; -fx-text-fill: #185FA5;"/>
+                    </HBox>
                     <HBox spacing="5">
                         <Label text="Presupuesto:"/>
                         <Label fx:id="lblPresupuesto" text="0" style="-fx-text-fill: blue; -fx-font-weight: bold;"/>
-                    </HBox>
-                    <HBox spacing="5" style="-fx-padding: 5 0 0 0;">
-                        <ComboBox fx:id="cmbMes" prefWidth="120" promptText="Mes"/>
-                        <ComboBox fx:id="cmbAnio" prefWidth="90" promptText="Año"/>
-                        <Button text="Consultar"
-                                onAction="#consultarMes"
-                                style="-fx-background-color: #2980B9; -fx-text-fill: white; -fx-background-radius: 5;"/>
                     </HBox>
                     <HBox spacing="5" style="-fx-padding: 5 0 0 0;">
                         <TextField fx:id="txtPresupuesto" promptText="Nuevo presupuesto" prefWidth="150"/>
                         <Button text="Guardar" onAction="#guardarPresupuesto"
                                 style="-fx-background-color: #2980B9; -fx-text-fill: white; -fx-background-radius: 5;"/>
                     </HBox>
+                    <VBox spacing="5" style="-fx-padding: 5 0 0 0;">
+                        <HBox spacing="5">
+                            <ComboBox fx:id="cmbMes" prefWidth="120" promptText="Mes"/>
+                            <ComboBox fx:id="cmbAnio" prefWidth="90" promptText="Año"/>
+                        </HBox>
+                        <Button text="Consultar Mes"
+                                onAction="#consultarMes"
+                                prefWidth="220"
+                                style="-fx-background-color: #2980B9; -fx-text-fill: white; -fx-background-radius: 5;"/>
+                    </VBox>
                 </VBox>
 
                 <!-- FORMULARIO REGISTRO -->

@@ -13,6 +13,9 @@ import javafx.collections.ObservableList;
 import java.sql.ResultSet;
 import java.time.LocalDateTime;
 import java.util.List;
+import javafx.scene.layout.VBox;
+import dao.AhorroDAO;
+
 
 public class DashboardController {
 
@@ -22,6 +25,11 @@ public class DashboardController {
     @FXML private Label lblAhorro;
     @FXML private Label lblEstado;
     @FXML private Label lblPresupuesto;
+    @FXML private ComboBox<String> cmbMes;
+    @FXML private ComboBox<Integer> cmbAnio;
+    @FXML private VBox panelSobrante;
+    @FXML private Label lblSobrante;
+    @FXML private Label lblTotalAhorrado;
 
     // Formulario registro
     @FXML private TextField txtMonto;
@@ -45,6 +53,7 @@ public class DashboardController {
 
     private GastoDAO gastoDAO = new GastoDAO();
     private CategoriaDAO categoriaDAO = new CategoriaDAO();
+    private AhorroDAO ahorroDAO = new AhorroDAO();
     private int mesActual = LocalDateTime.now().getMonthValue();
     private int anioActual = LocalDateTime.now().getYear();
 
@@ -56,6 +65,7 @@ public class DashboardController {
         actualizarDashboard();
         cargarPresupuesto();
         cargarCategoriasPersonalizadas();
+        cargarSelectorMes();
         actualizarDashboard();
     }
 
@@ -80,14 +90,39 @@ public class DashboardController {
 
     private void actualizarDashboard() {
         try {
-            // Total gastado directo
-            double total = gastoDAO.obtenerTotalMes(mesActual, anioActual);
-            double presupuesto = gastoDAO.obtenerPresupuesto(mesActual, anioActual);
-            double ahorro = presupuesto - total;
+            double ingreso = gastoDAO.obtenerPresupuesto(mesActual, anioActual);
+            double totalGastado = gastoDAO.obtenerTotalMes(mesActual, anioActual);
+            double ahorro = ingreso - totalGastado;
+            double totalAhorrado = ahorroDAO.obtenerTotalAhorrado();
 
-            lblTotalGastado.setText(String.format("$ %.0f", total));
-            lblPresupuesto.setText(String.format("$ %.0f", presupuesto));
+            lblPresupuesto.setText(String.format("$ %.0f", ingreso));
+            lblTotalGastado.setText(String.format("$ %.0f", totalGastado));
             lblAhorro.setText(String.format("$ %.0f", ahorro));
+
+            // Color según estado
+            if (ahorro < 0) {
+                lblAhorro.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+                lblEstado.setText("Ingreso excedido");
+                panelSobrante.setVisible(false);
+                panelSobrante.setManaged(false);
+            } else if (ahorro < ingreso * 0.1) {
+                lblAhorro.setStyle("-fx-text-fill: orange;");
+                lblEstado.setText("Cerca del limite");
+                panelSobrante.setVisible(false);
+                panelSobrante.setManaged(false);
+            } else {
+                lblAhorro.setStyle("-fx-text-fill: green;");
+                lblEstado.setText("En control");
+                // Solo mostrar panel si hay ingreso registrado Y hay sobrante real
+                if (ingreso > 0 && ahorro > 0) {
+                    panelSobrante.setVisible(true);
+                    panelSobrante.setManaged(true);
+                    lblSobrante.setText(String.format("Tienes $ %.0f disponibles", ahorro));
+                } else {
+                    panelSobrante.setVisible(false);
+                    panelSobrante.setManaged(false);
+                }
+            }
 
             // Estimación cierre
             ResultSet rsEst = gastoDAO.estimacionCierre(mesActual, anioActual);
@@ -96,14 +131,8 @@ public class DashboardController {
                         rsEst.getDouble("estimacion_cierre_mes")));
             }
 
-            // Estado
-            if (total > presupuesto) {
-                lblEstado.setText("Presupuesto excedido");
-            } else if (ahorro < presupuesto * 0.1) {
-                lblEstado.setText("Cerca del limite");
-            } else {
-                lblEstado.setText("En control");
-            }
+            // Total ahorrado
+            lblTotalAhorrado.setText(String.format("Cuenta ahorro: $ %.0f", totalAhorrado));
 
         } catch (Exception e) {
             System.out.println("Error dashboard: " + e.getMessage());
@@ -223,5 +252,60 @@ public class DashboardController {
     private void cargarCategoriasPersonalizadas(){
         List<Categoria> personalizadas = categoriaDAO.obtenerPersonalizadas();
         cmbEliminarCategoria.setItems(FXCollections.observableArrayList(personalizadas));
+    }
+
+    // Cargar mes
+    private void cargarSelectorMes() {
+        cmbMes.setItems(FXCollections.observableArrayList(
+                "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ));
+        // Cargar anios
+        cmbAnio.setItems(FXCollections.observableArrayList(
+                2024, 2025, 2026, 2027
+        ));
+        cmbAnio.getSelectionModel().select(Integer.valueOf(anioActual));
+    }
+
+    @FXML
+    public void consultarMes() {
+        int mes = cmbMes.getSelectionModel().getSelectedIndex() + 1;
+        int anio = cmbAnio.getValue();
+        mesActual = mes;
+        anioActual = anio;
+        cargarGastos();
+        cargarPresupuesto();
+        actualizarDashboard();
+    }
+
+    @FXML
+    public void guardarEnAhorro() {
+        double sobrante = calcularSobrante();
+        if (sobrante <= 0) {
+            mostrarAlerta("No hay sobrante para guardar.");
+            return;
+        }
+        ahorroDAO.registrarAhorro(sobrante, mesActual, anioActual,
+                "Ahorro mes " + mesActual + "/" + anioActual);
+        mostrarExito(String.format("$ %.0f guardado en cuenta de ahorro!", sobrante));
+        actualizarDashboard();
+    }
+
+    @FXML
+    public void agregarAlSiguienteMes() {
+        double sobrante = calcularSobrante();
+        if (sobrante <= 0) {
+            mostrarAlerta("No hay sobrante para agregar.");
+            return;
+        }
+        ahorroDAO.agregarAIngresoSiguiente(sobrante, mesActual, anioActual);
+        mostrarExito(String.format("$ %.0f agregado al ingreso del mes siguiente!", sobrante));
+        actualizarDashboard();
+    }
+
+    private double calcularSobrante() {
+        double ingreso = gastoDAO.obtenerPresupuesto(mesActual, anioActual);
+        double gastado = gastoDAO.obtenerTotalMes(mesActual, anioActual);
+        return ingreso - gastado;
     }
 }
