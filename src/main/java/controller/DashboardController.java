@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import javafx.scene.layout.VBox;
 import dao.AhorroDAO;
+import java.time.format.DateTimeFormatter;
 
 
 public class DashboardController {
@@ -72,10 +73,25 @@ public class DashboardController {
     private void  configurarTabla(){
         colId.setCellValueFactory(new PropertyValueFactory<>("id"));
         colMonto.setCellValueFactory(new PropertyValueFactory<>("monto"));
+        colMonto.setCellFactory(column -> new TableCell<Gasto, Double>() {
+            @Override
+            protected void updateItem(Double item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : String.format("$ %,.0f", item));
+            }
+        });
         colTienda.setCellValueFactory(new PropertyValueFactory<>("tienda"));
         colCategoria.setCellValueFactory(new PropertyValueFactory<>("nombreCategoria"));
         colUbicacion.setCellValueFactory(new PropertyValueFactory<>("ubicacion"));
         colFecha.setCellValueFactory(new PropertyValueFactory<>("fechaHora"));
+        colFecha.setCellFactory(column -> new TableCell<Gasto, LocalDateTime>() {
+            private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+            @Override
+            protected void updateItem(LocalDateTime item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.format(formatter));
+            }
+        });
     }
 
     public  void cargarGastos(){
@@ -156,6 +172,7 @@ public class DashboardController {
             limpiarFormulario();
             cargarGastos();
             actualizarDashboard();
+            mostrarExito("Gasto registrado correctamente.");
         } catch (NumberFormatException e){
             mostrarAlerta("El monto debe ser un número válido.");
         }
@@ -166,11 +183,19 @@ public class DashboardController {
         Gasto seleccionado = tablaGastos.getSelectionModel().getSelectedItem();
         if(seleccionado == null ){
             mostrarAlerta("Selecciona un gasto de la tabla.");
-            return; // ← agregar return para que no siga ejecutando
+            return;
         }
-        gastoDAO.eliminar(seleccionado.getId()); // ← minúscula, instancia no static
-        cargarGastos();
-        actualizarDashboard();
+        Alert confirmacion = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmacion.setTitle("Confirmar eliminación");
+        confirmacion.setContentText("¿Estás seguro de eliminar el gasto de "
+                + seleccionado.getTienda() + " por $" + String.format("%,.0f", seleccionado.getMonto()) + "?");
+
+        if (confirmacion.showAndWait().get() == ButtonType.OK) {
+            gastoDAO.eliminar(seleccionado.getId());
+            cargarGastos();
+            actualizarDashboard();
+            mostrarExito("Gasto eliminado correctamente.");
+        }
     }
 
     private void limpiarFormulario(){
