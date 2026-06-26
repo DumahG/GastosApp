@@ -213,13 +213,28 @@ public class DashboardController {
     }
 
     public void guardarPresupuesto(){
-        try{
-            double limite = Double.parseDouble(txtPresupuesto.getText());
-            gastoDAO.guardarPresupuesto(limite, mesActual, anioActual);
+        try {
+            double nuevoMonto = Double.parseDouble(txtPresupuesto.getText());
+            double montoActual = gastoDAO.obtenerPresupuesto(mesActual, anioActual);
+
+            if (montoActual > 0) {
+                Alert confirmacion = new Alert(Alert.AlertType.CONFIRMATION);
+                confirmacion.setTitle("Confirmar actualización");
+                confirmacion.setContentText("Ya existe un ingreso de $"
+                        + String.format("%,.0f", montoActual) + " registrado para este mes.\n¿Deseas actualizarlo a $"
+                        + String.format("%,.0f", nuevoMonto) + "?");
+
+                if (confirmacion.showAndWait().get() != ButtonType.OK) {
+                    return; // cancela, no hace nada
+                }
+            }
+
+            gastoDAO.guardarPresupuesto(nuevoMonto, mesActual, anioActual);
             txtPresupuesto.clear();
             actualizarDashboard();
-        } catch (NumberFormatException e){
-            mostrarAlerta("Ingresa un monto valido para el presupuesto");
+            mostrarExito("Ingreso guardado correctamente.");
+        } catch (NumberFormatException e) {
+            mostrarAlerta("Ingresa un monto válido para el ingreso.");
         }
     }
 
